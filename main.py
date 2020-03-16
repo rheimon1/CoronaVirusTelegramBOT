@@ -1,13 +1,14 @@
-from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
-
+import os
 import requests
 
-from conf.settings import BASE_API_URL, TELEGRAM_TOKEN
+from telegram import Update, Bot
+from telegram.ext import CommandHandler, Dispatcher
 
-def brazil(bot, update):
+
+def brazil(bot, update: Update, **optional_args):
 
      # Dados da requisição feita na API do coronaanalytic
-    dataBrazil = requests.get(BASE_API_URL+"brazil").json()
+    dataBrazil = requests.get("https://api.coronaanalytic.com/brazil").json()
 
     values = dataBrazil["values"]
 
@@ -33,9 +34,9 @@ def brazil(bot, update):
         text=response_message.format(cases, suspects, deaths, date, time)
     )
 
-def world(bot, update):
+def world(bot, update: Update, **optional_args):
 
-    req = requests.get(BASE_API_URL).json()
+    req = requests.get("https://api.coronaanalytic.com/").json()
 
     dataWorld = req["world"]
 
@@ -63,42 +64,29 @@ def world(bot, update):
         text=response_message.format(cases, suspects, deaths, date, time)
     )
 
-def sao_paulo(bot, update):
-    dataSaoPaulo = requests.get(BASE_API_URL+"brazil/35").json()
+def sao_paulo(bot, update: Update, **optional_args):
+    dataSaoPaulo = requests.get("https://api.coronaanalytic.com/brazil/35").json()
 
     cases = dataSaoPaulo["cases"]
     suspects = dataSaoPaulo["suspects"]
     deaths = dataSaoPaulo["deaths"]
 
     response_message = "Informações gerais sobre o corona vírus (COVID-19) em São Paulo\n\n - Casos: {}; \n - Suspeitas: {}; \n - Mortes: {}. \n\n Todas as informações são atualizadas a cada hora com a fonte de dados fornecida pelo governo do Brasil: https://saude.gov.br"
-
+    
     bot.send_message(
         chat_id=update.message.chat_id,
         text=response_message.format(cases, suspects, deaths)
     )
 
-def main():
-    updater = Updater(token=TELEGRAM_TOKEN)
+def webhook(request):
+    bot = Bot(token=os.environ["TELEGRAM_TOKEN"])
+    dispatcher = Dispatcher(bot, None, 0)
+    dispatcher.add_handler(CommandHandler("coronaBrasil", brazil))
+    dispatcher.add_handler(CommandHandler("coronaMundo", world))
+    dispatcher.add_handler(CommandHandler("coronaSP", sao_paulo))
 
-    dispatcher = updater.dispatcher
+    if request.method == "POST":
+        update = Update.de_json(request.get_json(force=True), bot)
+        dispatcher.process_update(update)
 
-    dispatcher.add_handler(
-        CommandHandler('coronaBrasil', brazil)
-    )
-
-    dispatcher.add_handler(
-        CommandHandler('coronaMundo', world)
-    )
-
-    dispatcher.add_handler(
-      CommandHandler('coronaSP', sao_paulo)
-    )
-
-    updater.start_polling()
-
-    updater.idle()
-
-
-if __name__ == '__main__':
-    print("press CTRL + C to cancel.")
-    main()
+    return "ok"
