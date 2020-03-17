@@ -4,7 +4,7 @@ from telegram import Bot, Update
 from telegram.ext import Dispatcher, CommandHandler
 
 
-def brazil(bot, update: Update, **optional_args):
+def brazil(bot, update: Update):
     # Dados da requisição feita na API do coronaanalytic
     dataBrazil = requests.get("https://api.coronaanalytic.com/brazil").json()
 
@@ -28,7 +28,7 @@ def brazil(bot, update: Update, **optional_args):
     update.message.reply_text(response_message.format(cases, suspects, deaths, date, time), quote=False)
 
 
-def world(bot, update: Update, **optional_args):
+def world(bot, update: Update):
     req = requests.get("https://api.coronaanalytic.com/").json()
 
     dataWorld = req["world"]
@@ -55,7 +55,7 @@ def world(bot, update: Update, **optional_args):
     update.message.reply_text(response_message.format(cases, suspects, deaths, date, time), quote=False)
 
 
-def sao_paulo(bot, update: Update, **optional_args):
+def sao_paulo(bot, update: Update):
     dataSaoPaulo = requests.get("https://api.coronaanalytic.com/brazil/35").json()
 
     cases = dataSaoPaulo["cases"]
@@ -67,13 +67,15 @@ def sao_paulo(bot, update: Update, **optional_args):
     update.message.reply_text(response_message.format(cases, suspects, deaths), quote=False)
 
 
-def start(bot, update: Update, **optional_args):
+def start(bot, update: Update):
     update.message.reply_text('OIII', quote=False)
 
 
 def webhook(request):
-    bot = Bot(token=os.environ['TELEGRAM_TOKEN'])
+    bot = Bot(token=os.environ["TELEGRAM_TOKEN"])
+    
     dispatcher = Dispatcher(bot, None, 0)
+    
     dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('coronaMundo', world))
     dispatcher.add_handler(CommandHandler('coronaBrasil', brazil))
